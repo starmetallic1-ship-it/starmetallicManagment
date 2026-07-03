@@ -1,5 +1,4 @@
 
-
 <!-- ব্রাউজারের localStorage-এর পরিবর্তে ফাইল সিস্টেমে ডেটা সেভ করতে চাইলে এবং ব্রাউজার থেকেই সেই ফাইল সরাসরি রিড/রাইট (Read/Write) করতে চাইলে সবচেয়ে আধুনিক এবং সহজ উপায় হলো File System Access API ব্যবহার করা।
 
 এর সুবিধা হলো, এটি ব্যবহার করলে আপনাকে কোনো নোড বা ব্যাকএন্ড সার্ভার সেটআপ করতে হবে না। ব্রাউজার নিজেই আপনার কম্পিউটারের নির্দিষ্ট ৩টি আলাদা .txt ফাইল (যেমন: orders.txt, receivable.txt, payable.txt) রিড, আপডেট এবং ডিলিট করতে পারবে।
@@ -11,152 +10,44 @@
 ২. বাটনগুলোতে ক্লিক করে আপনার কম্পিউটারের যেকোনো ফোল্ডারে ৩টি আলাদা .txt ফাইল তৈরি করে সিলেক্ট করে দিন (অথবা আগের ফাঁকা টেক্সট ফাইল সিলেক্ট করুন)।
 ৩. ব্রাউজার থেকে "Save Changes" বা পারমিশন চাইলে "Allow" বা "View Files"-এ ক্লিক করবেন। এরপর থেকে আপনি যাই এডিট, আপডেট বা ডিলিট করবেন, তা সরাসরি ওই .txt ফাইলগুলোতে রিয়েল-টাইমে সেভ হয়ে যাবে! -->
 
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Ledger & Order Manager (Auto-Reconnect Edition)</title>
+    <title>Business Ledger (Folder Auto-Sync - Robust)</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f7f6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            max-width: 1350px;
-            margin: 0 auto;
-            border: 1px solid #ddd;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 1350px; margin: 0 auto; border: 1px solid #ddd; }
         
-        /* File Connection Panel */
-        .file-panel {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            border: 1px dashed #ccc;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .file-btn {
-            background: #e67e22;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-            transition: 0.2s;
-        }
+        .file-panel { background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px dashed #ccc; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .file-btn { background: #e67e22; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
         .file-btn:hover { background: #d35400; }
-        .file-btn.connected {
-            background: #28a745;
-        }
-        .file-btn.needs-permission {
-            background: #dc3545;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
+        .file-btn.connected { background: #28a745; }
+        .file-btn.needs-permission { background: #dc3545; animation: pulse 1.5s infinite; }
+        .reset-btn { background: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .reset-btn:hover { background: #5a6268; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        /* Navigation Tabs */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 10px;
-        }
-        .tab-btn {
-            background: #e9ecef;
-            color: #495057;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            transition: 0.3s;
-        }
-        .tab-btn:hover { background: #dfe2e6; }
-        .tab-btn.active {
-            background: #007bff;
-            color: white;
-        }
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { background: #e9ecef; color: #495057; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .tab-btn.active { background: #007bff; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Control Panel */
-        .control-panel {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            align-items: center;
-        }
-        .search-input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #007bff;
-            background: #fff;
-            color: #333;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .toggle-archive-btn {
-            background: #6f42c1;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .toggle-archive-btn:hover { background: #59339d; }
+        .control-panel { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+        .search-input { flex: 1; padding: 10px; border: 1px solid #007bff; background: #fff; color: #333; border-radius: 4px; }
+        .toggle-archive-btn { background: #6f42c1; color: white; padding: 10px 20px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
-        /* Form Styling */
-        .form-group {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #eee;
-        }
+        .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #eee; }
         .form-field { display: flex; flex-direction: column; }
         .form-field label { font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; }
-        input {
-            padding: 8px;
-            border: 1px solid #ccc;
-            background: #fff;
-            color: #333;
-            border-radius: 4px;
-            outline: none;
-            font-size: 14px;
-        }
+        input { padding: 8px; border: 1px solid #ccc; background: #fff; color: #333; border-radius: 4px; outline: none; }
         
         .btn-container { display: flex; align-items: flex-end; }
         button.action-submit { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; background: #28a745; color: white; }
-        button.action-submit:hover { background: #218838; }
         button.cancel-btn { background: #6c757d; color: white; padding: 10px; border-radius: 4px; border:none; cursor:pointer; font-weight:bold; margin-left: 5px; }
 
-        /* Table Styling */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f1f1f1; color: #333; font-weight: 600; }
@@ -168,32 +59,24 @@
         .paid-btn { background: #28a745; color: white; padding: 5px 8px; font-size: 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; }
         .delete-btn { background: #dc3545; color: white; padding: 5px 8px; font-size: 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; }
         
-        /* Badges */
         .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
         .status-unpaid { background: #f8d7da; color: #721c24; }
         .status-paid { background: #d4edda; color: #155724; }
         .status-pending { background: #cfe2ff; color: #084298; }
         .status-delivered { background: #e2e3e5; color: #41464b; }
-
-        .alarm-tag {
-            background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px; display: inline-block; animation: blinker 1.5s linear infinite;
-        }
+        .alarm-tag { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px; display: inline-block; animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.4; } }
-        
-        .archive-mode-banner {
-            background: #e2d9f3; color: #4b286d; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; display: none; text-align: center;
-        }
+        .archive-mode-banner { background: #e2d9f3; color: #4b286d; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; display: none; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="file-panel">
-        <span>📁 <b>File Storage Setup:</b></span>
-        <button id="btn-file-orders" class="file-btn" onclick="handleFileClick('orders')">Connect Orders File (.txt)</button>
-        <button id="btn-file-receivable" class="file-btn" onclick="handleFileClick('receivable')">Connect Receivable File (.txt)</button>
-        <button id="btn-file-payable" class="file-btn" onclick="handleFileClick('payable')">Connect Payable File (.txt)</button>
-        <small id="setup-instruction" style="color: #666;">(ফাইলগুলো একবার সিলেক্ট করুন, পরবর্তীতে শুধু এক ক্লিকে পারমিশন দিলেই হবে)</small>
+        <span>📁 <b>Workspace Folder Sync:</b></span>
+        <button id="btn-folder" class="file-btn" onclick="handleFolderClick()">Connect Ledger Folder</button>
+        <button class="reset-btn" onclick="resetWorkspace()">🔄 Reset Connection</button>
+        <small id="setup-instruction" style="color: #666;">(ফোল্ডার কপি করে অন্য কোথাও নিলে আগে 'Reset Connection' দিয়ে তারপর নতুন ফোল্ডারটি সিলেক্ট করুন)</small>
     </div>
 
     <div class="tabs">
@@ -205,7 +88,7 @@
     <div id="tab-orders" class="tab-content active">
         <h2>Order Ledger</h2>
         <div class="control-panel">
-            <input type="text" id="search-orders" class="search-input" placeholder="🔍 Search by Description, Mobile, or Date..." oninput="renderOrders()">
+            <input type="text" id="search-orders" class="search-input" placeholder="🔍 Search by Description, Mobile..." oninput="renderOrders()">
             <button id="toggle-archive-orders" class="toggle-archive-btn" onclick="toggleArchive('orders')">View Archive</button>
         </div>
         <div id="archive-banner-orders" class="archive-mode-banner">📁 Viewing Archived/Delivered Orders Only</div>
@@ -223,24 +106,24 @@
         </div>
         <table>
             <thead>
-                <tr><th>Sl No.</th><th>Description</th><th>Mobile</th><th>Delivery Date</th><th>Total Bill</th><th>Advance/Paid</th><th>Balance Due (বাকি)</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>Sl No.</th><th>Description</th><th>Mobile</th><th>Delivery Date</th><th>Total Bill</th><th>Advance/Paid</th><th>Balance Due</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="table-orders"></tbody>
         </table>
     </div>
 
     <div id="tab-receivable" class="tab-content">
-        <h2>Accounts Receivable (আমি কার কাছে কত টাকা পাবো)</h2>
+        <h2>Accounts Receivable</h2>
         <div class="control-panel">
-            <input type="text" id="search-receivable" class="search-input" placeholder="🔍 Search by Name/Address, Mobile, or Date..." oninput="renderReceivable()">
+            <input type="text" id="search-receivable" class="search-input" placeholder="🔍 Search..." oninput="renderReceivable()">
             <button id="toggle-archive-receivable" class="toggle-archive-btn" onclick="toggleArchive('receivable')">View Archive</button>
         </div>
         <div id="archive-banner-receivable" class="archive-mode-banner">📁 Viewing Archived/Paid Receivables Only</div>
 
         <div class="form-group" id="form-receivable">
-            <div class="form-field"><label>Name & Address / ঠিকানা</label><input type="text" id="rec-name"></div>
+            <div class="form-field"><label>Name & Address</label><input type="text" id="rec-name"></div>
             <div class="form-field"><label>Mobile Number</label><input type="tel" id="rec-mobile"></div>
-            <div class="form-field"><label>Date / তারিখ</label><input type="date" id="rec-date"></div>
+            <div class="form-field"><label>Date</label><input type="date" id="rec-date"></div>
             <div class="form-field"><label>Receivable Amount (৳)</label><input type="number" id="rec-amount" step="0.01"></div>
             <div class="btn-container">
                 <button id="submit-receivable" class="action-submit" onclick="handleSubmit('receivable')">Add Record</button>
@@ -256,9 +139,9 @@
     </div>
 
     <div id="tab-payable" class="tab-content">
-        <h2>Accounts Payable (আমার কাছে কে কত টাকা পাবে)</h2>
+        <h2>Accounts Payable</h2>
         <div class="control-panel">
-            <input type="text" id="filter-pay-mobile" class="search-input" placeholder="🔍 Filter by Mobile Number..." oninput="renderPayable()">
+            <input type="text" id="filter-pay-mobile" class="search-input" placeholder="🔍 Filter by Mobile..." oninput="renderPayable()">
             <button id="toggle-archive-payable" class="toggle-archive-btn" onclick="toggleArchive('payable')">View Archive</button>
         </div>
         <div id="archive-banner-payable" class="archive-mode-banner">📁 Viewing Archived/Paid Payables Only</div>
@@ -286,95 +169,92 @@
 
 <script>
     let db = { orders: [], receivable: [], payable: [] };
+    let folderHandle = null;
     let fileHandles = { orders: null, receivable: null, payable: null };
     let editTrackers = { orders: null, receivable: null, payable: null };
     let archiveTrackers = { orders: false, receivable: false, payable: false };
 
-    // INDEXEDDB UTILITIES FOR AUTO-RECOVERY
     function openIDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open("FileStorageDB", 1);
-            request.onupgradeneeded = e => e.target.result.createObjectStore("handles");
+            const request = indexedDB.open("FolderStorageDB", 1);
+            request.onupgradeneeded = e => e.target.result.createObjectStore("workspace");
             request.onsuccess = e => resolve(e.target.result);
             request.onerror = e => reject(e.target.error);
         });
     }
 
-    async function storeHandle(key, handle) {
-        const idb = await openIDB();
-        const tx = idb.transaction("handles", "readwrite");
-        tx.objectStore("handles").put(handle, key);
-    }
-
-    async function getHandle(key) {
-        const idb = await openIDB();
-        return new Promise((resolve) => {
-            const req = idb.transaction("handles").objectStore("handles").get(key);
-            req.onsuccess = () => resolve(req.result || null);
-            req.onerror = () => resolve(null);
-        });
-    }
-
-    // PAGE LOAD INITIATION
     window.addEventListener('DOMContentLoaded', async () => {
-        for (let type of ['orders', 'receivable', 'payable']) {
-            const savedHandle = await getHandle(type);
-            if (savedHandle) {
-                fileHandles[type] = savedHandle;
-                const btn = document.getElementById(`btn-file-${type}`);
-                btn.innerText = `🔄 Reconnect ${type.toUpperCase()}`;
-                btn.classList.add('needs-permission');
+        const idb = await openIDB();
+        const req = idb.transaction("workspace").objectStore("workspace").get("rootFolder");
+        req.onsuccess = async () => {
+            if (req.result) {
+                folderHandle = req.result;
+                const btn = document.getElementById(`btn-folder`);
+                btn.innerText = `🔄 Reconnect Folder Workspace`;
+                btn.className = 'file-btn needs-permission';
             }
-        }
+        };
     });
 
-    // CLICK HANDLER FOR BUTTONS
-    async function handleFileClick(type) {
-        if (fileHandles[type]) {
-            // যদি আগে থেকে হ্যান্ডেল সেভ থাকে, জাস্ট রি-ভেরিফাই বা পারমিশন নেওয়া
-            const options = { mode: 'readwrite' };
-            if ((await fileHandles[type].queryPermission(options)) === 'granted') {
-                await loadFileData(type);
-            } else if ((await fileHandles[type].requestPermission(options)) === 'granted') {
-                await loadFileData(type);
-            } else {
-                // পারমিশন ডিনাই করলে নতুন করে ফাইল উইন্ডো ওপেন করবে
-                await chooseNewFile(type);
+    async function handleFolderClick() {
+        const options = { mode: 'readwrite' };
+        try {
+            if (folderHandle) {
+                try {
+                    if ((await folderHandle.queryPermission(options)) === 'granted' || (await folderHandle.requestPermission(options)) === 'granted') {
+                        await scanAndLoadFolder();
+                        return;
+                    }
+                } catch(e) {
+                    console.log("Old handle invalid, forcing new choice.");
+                }
             }
-        } else {
-            await chooseNewFile(type);
-        }
-    }
-
-    async function chooseNewFile(type) {
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                types: [{ description: 'Text Files', accept: { 'text/plain': ['.txt'] } }],
-                multiple: false
-            });
-            fileHandles[type] = handle;
-            await storeHandle(type, handle); // IndexedDB তে হ্যান্ডেল সেভ করা হলো
-            await loadFileData(type);
-        } catch (err) {
-            console.error("File choice cancelled", err);
-        }
-    }
-
-    async function loadFileData(type) {
-        try {
-            const file = await fileHandles[type].getFile();
-            const text = await file.text();
-            db[type] = text.trim() ? JSON.parse(text) : [];
             
-            const btn = document.getElementById(`btn-file-${type}`);
-            btn.innerText = `✓ ${type.toUpperCase()} Connected`;
+            folderHandle = await window.showDirectoryPicker();
+            const idb = await openIDB();
+            idb.transaction("workspace", "readwrite").objectStore("workspace").put(folderHandle, "rootFolder");
+            await scanAndLoadFolder();
+        } catch (err) {
+            alert("ফোল্ডার প্রসেস করা যায়নি। অনুগ্রহ করে 'Reset Connection' বাটনে ক্লিক করে নতুন করে ফোল্ডার দেখান।");
+            console.error(err);
+        }
+    }
+
+    async function resetWorkspace() {
+        const idb = await openIDB();
+        idb.transaction("workspace", "readwrite").objectStore("workspace").delete("rootFolder");
+        folderHandle = null;
+        fileHandles = { orders: null, receivable: null, payable: null };
+        db = { orders: [], receivable: [], payable: [] };
+        
+        const btn = document.getElementById(`btn-folder`);
+        btn.innerText = `Connect Ledger Folder`;
+        btn.className = 'file-btn';
+        
+        document.getElementById('table-orders').innerHTML = '';
+        document.getElementById('table-receivable').innerHTML = '';
+        document.getElementById('table-payable').innerHTML = '';
+        
+        alert("মেমোরি রিসেট হয়েছে! এখন 'Connect Ledger Folder' বাটনে ক্লিক করে নতুন লোকেশনের ফোল্ডারটি সিলেক্ট করতে পারবেন।");
+    }
+
+    async function scanAndLoadFolder() {
+        const filenames = { orders: 'orders.txt', receivable: 'receivable.txt', payable: 'payable.txt' };
+        try {
+            for (let type in filenames) {
+                fileHandles[type] = await folderHandle.getFileHandle(filenames[type], { create: true });
+                const file = await fileHandles[type].getFile();
+                const text = await file.text();
+                db[type] = text.trim() ? JSON.parse(text) : [];
+            }
+            
+            const btn = document.getElementById(`btn-folder`);
+            btn.innerText = `✓ Workspace Synced & Connected`;
             btn.className = 'file-btn connected';
             
-            if(type === 'orders') renderOrders();
-            if(type === 'receivable') renderReceivable();
-            if(type === 'payable') renderPayable();
+            renderOrders(); renderReceivable(); renderPayable();
         } catch (err) {
-            alert("ফাইল রিড করা যায়নি। পুনরায় চেষ্টা করুন।");
+            alert("ফোল্ডারের ফাইলগুলো প্রসেস করা যায়নি। রিসেট বাটন চেপে আবার ট্রাই করুন।");
             console.error(err);
         }
     }
@@ -386,7 +266,7 @@
             await writable.write(JSON.stringify(db[type], null, 2));
             await writable.close();
         } catch (err) {
-            console.error("Auto-save failed. Check file permissions.", err);
+            console.error("Save failed", err);
         }
     }
 
@@ -395,263 +275,111 @@
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
         event.target.classList.add('active');
         document.getElementById(`tab-${tabName}`).classList.add('active');
-        
-        if(tabName === 'orders') renderOrders();
-        if(tabName === 'receivable') renderReceivable();
-        if(tabName === 'payable') renderPayable();
     }
 
     function renderOrders() {
         const tbody = document.getElementById('table-orders');
         const query = document.getElementById('search-orders').value.toLowerCase();
         const today = new Date().toISOString().split('T')[0];
-        tbody.innerHTML = '';
-        let count = 0;
+        tbody.innerHTML = ''; let count = 0;
 
         db.orders.forEach((item, index) => {
             if (!!item.archived !== archiveTrackers.orders) return;
-            if (query && !item.desc.toLowerCase().includes(query) && !(item.mobile || '').includes(query) && !(item.date || '').includes(query)) return;
-
+            if (query && !item.desc.toLowerCase().includes(query) && !(item.mobile || '').includes(query)) return;
             count++;
             let alarm = (!item.archived && !item.delivered && item.date && item.date <= today) ? `<span class="alarm-tag">🚨 Urgent</span>` : '';
             let orderBalance = parseFloat(item.bill || 0) - parseFloat(item.advance || 0);
             let statusBadge = item.delivered ? `<span class="status-badge status-delivered">Delivered</span>` : `<span class="status-badge status-pending">Pending</span>`;
-
             let actions = !archiveTrackers.orders ? 
-                `<button class="paid-btn" style="background: #17a2b8" onclick="markAsDelivered(${index})">📦 Mark Delivered</button>
-                 <button class="edit-btn" onclick="startEdit('orders', ${index})">Edit</button>
-                 <button class="delete-btn" onclick="deleteItem('orders', ${index})">Delete</button>` :
-                `<button class="archive-btn" onclick="archiveItem('orders', ${index}, false)">Restore</button>
-                 <button class="delete-btn" onclick="deleteItem('orders', ${index})">Delete Perm</button>`;
+                `<button class="paid-btn" style="background: #17a2b8" onclick="markAsDelivered(${index})">📦 Delivered</button><button class="edit-btn" onclick="startEdit('orders', ${index})">Edit</button><button class="delete-btn" onclick="deleteItem('orders', ${index})">Delete</button>` :
+                `<button class="archive-btn" onclick="archiveItem('orders', ${index}, false)">Restore</button><button class="delete-btn" onclick="deleteItem('orders', ${index})">Delete Perm</button>`;
 
-            tbody.innerHTML += `<tr>
-                <td><b>${count}</b></td><td>${item.desc}</td><td>${item.mobile || '-'}</td>
-                <td>${item.date || '-'} ${alarm}</td><td>৳${parseFloat(item.bill || 0).toFixed(2)}</td>
-                <td>৳${parseFloat(item.advance || 0).toFixed(2)}</td>
-                <td style="color: ${orderBalance > 0 ? '#dc3545' : '#28a745'}; font-weight: bold;">৳${orderBalance.toFixed(2)}</td>
-                <td>${statusBadge}</td><td class="actions">${actions}</td>
-            </tr>`;
+            tbody.innerHTML += `<tr><td><b>${count}</b></td><td>${item.desc}</td><td>${item.mobile || '-'}</td><td>${item.date || '-'} ${alarm}</td><td>৳${parseFloat(item.bill || 0).toFixed(2)}</td><td>৳${parseFloat(item.advance || 0).toFixed(2)}</td><td style="color:${orderBalance > 0 ? '#dc3545' : '#28a745'};font-weight:bold;">৳${orderBalance.toFixed(2)}</td><td>${statusBadge}</td><td class="actions">${actions}</td></tr>`;
         });
     }
 
-    function markAsDelivered(index) {
-        db.orders[index].delivered = true;
-        db.orders[index].archived = true;
-        saveToFile('orders');
-        renderOrders();
-    }
+    function markAsDelivered(index) { db.orders[index].delivered = true; db.orders[index].archived = true; saveToFile('orders'); renderOrders(); }
 
     function renderReceivable() {
         const tbody = document.getElementById('table-receivable');
         const query = document.getElementById('search-receivable').value.toLowerCase();
-        tbody.innerHTML = '';
-        let count = 0;
-
+        tbody.innerHTML = ''; let count = 0;
         db.receivable.forEach((item, index) => {
             if (!!item.archived !== archiveTrackers.receivable) return;
-            if (query && !item.name.toLowerCase().includes(query) && !(item.mobile || '').includes(query) && !(item.date || '').includes(query)) return;
-
+            if (query && !item.name.toLowerCase().includes(query) && !(item.mobile || '').includes(query)) return;
             count++;
             let statusBadge = item.paid ? `<span class="status-badge status-paid">Paid</span>` : `<span class="status-badge status-unpaid">Unpaid</span>`;
-
             let actions = !archiveTrackers.receivable ? 
-                `<button class="paid-btn" onclick="markAsPaid('receivable', ${index})">✓ Mark Paid</button>
-                 <button class="edit-btn" onclick="startEdit('receivable', ${index})">Edit</button>
-                 <button class="delete-btn" onclick="deleteItem('receivable', ${index})">Delete</button>` :
-                `<button class="archive-btn" onclick="archiveItem('receivable', ${index}, false)">Restore</button>
-                 <button class="delete-btn" onclick="deleteItem('receivable', ${index})">Delete Perm</button>`;
-
-            tbody.innerHTML += `<tr>
-                <td><b>${count}</b></td><td>${item.name}</td><td>${item.mobile || '-'}</td>
-                <td>${item.date || '-'}</td><td>৳${parseFloat(item.amount || 0).toFixed(2)}</td>
-                <td>${statusBadge}</td><td class="actions">${actions}</td>
-            </tr>`;
+                `<button class="paid-btn" onclick="markAsPaid('receivable', ${index})">✓ Paid</button><button class="edit-btn" onclick="startEdit('receivable', ${index})">Edit</button><button class="delete-btn" onclick="deleteItem('receivable', ${index})">Delete</button>` :
+                `<button class="archive-btn" onclick="archiveItem('receivable', ${index}, false)">Restore</button><button class="delete-btn" onclick="deleteItem('receivable', ${index})">Delete Perm</button>`;
+            tbody.innerHTML += `<tr><td><b>${count}</b></td><td>${item.name}</td><td>${item.mobile || '-'}</td><td>${item.date || '-'}</td><td>৳${parseFloat(item.amount || 0).toFixed(2)}</td><td>${statusBadge}</td><td class="actions">${actions}</td></tr>`;
         });
     }
 
     function renderPayable() {
         const tbody = document.getElementById('table-payable');
         const fMobile = document.getElementById('filter-pay-mobile').value.trim();
-        tbody.innerHTML = '';
-        let count = 0;
-
+        tbody.innerHTML = ''; let count = 0;
         db.payable.forEach((item, index) => {
             if (!!item.archived !== archiveTrackers.payable) return;
             if (fMobile && !(item.mobile || '').includes(fMobile)) return;
-
             count++;
             let balance = parseFloat(item.bill || 0) - parseFloat(item.advance || 0);
             let statusBadge = item.paid ? `<span class="status-badge status-paid">Paid</span>` : `<span class="status-badge status-unpaid">Unpaid</span>`;
-
             let actions = !archiveTrackers.payable ? 
-                `<button class="paid-btn" onclick="markAsPaid('payable', ${index})">✓ Mark Paid</button>
-                 <button class="edit-btn" onclick="startEdit('payable', ${index})">Edit</button>
-                 <button class="delete-btn" onclick="deleteItem('payable', ${index})">Delete</button>` :
-                `<button class="archive-btn" onclick="archiveItem('payable', ${index}, false)">Restore</button>
-                 <button class="delete-btn" onclick="deleteItem('payable', ${index})">Delete Perm</button>`;
-
-            tbody.innerHTML += `<tr>
-                <td><b>${count}</b></td><td>${item.desc}</td><td>${item.address}</td><td>${item.mobile || '-'}</td>
-                <td>${item.date || '-'}</td><td>৳${parseFloat(item.bill || 0).toFixed(2)}</td>
-                <td>৳${parseFloat(item.advance || 0).toFixed(2)}</td>
-                <td style="color: ${balance > 0 ? '#dc3545' : '#28a745'}; font-weight: bold;">৳${balance.toFixed(2)}</td>
-                <td>${statusBadge}</td><td class="actions">${actions}</td>
-            </tr>`;
+                `<button class="paid-btn" onclick="markAsPaid('payable', ${index})">✓ Paid</button><button class="edit-btn" onclick="startEdit('payable', ${index})">Edit</button><button class="delete-btn" onclick="deleteItem('payable', ${index})">Delete</button>` :
+                `<button class="archive-btn" onclick="archiveItem('payable', ${index}, false)">Restore</button><button class="delete-btn" onclick="deleteItem('payable', ${index})">Delete Perm</button>`;
+            tbody.innerHTML += `<tr><td><b>${count}</b></td><td>${item.desc}</td><td>${item.address}</td><td>${item.mobile || '-'}</td><td>${item.date || '-'}</td><td>৳${parseFloat(item.bill || 0).toFixed(2)}</td><td>৳${parseFloat(item.advance || 0).toFixed(2)}</td><td style="color:${balance > 0 ? '#dc3545' : '#28a745'};font-weight:bold;">৳${balance.toFixed(2)}</td><td>${statusBadge}</td><td class="actions">${actions}</td></tr>`;
         });
     }
 
-    function markAsPaid(type, index) {
-        db[type][index].paid = true;
-        db[type][index].archived = true;
-        saveToFile(type);
-        if(type === 'receivable') renderReceivable();
-        if(type === 'payable') renderPayable();
-    }
+    function markAsPaid(type, index) { db[type][index].paid = true; db[type][index].archived = true; saveToFile(type); if(type === 'receivable') renderReceivable(); if(type === 'payable') renderPayable(); }
 
     function handleSubmit(type) {
         if (type === 'orders') {
-            const desc = document.getElementById('order-desc').value.trim();
-            if(!desc) return alert("Description required");
-            const data = {
-                desc, mobile: document.getElementById('order-mobile').value,
-                date: document.getElementById('order-date').value,
-                bill: document.getElementById('order-bill').value,
-                advance: document.getElementById('order-advance').value,
-                delivered: false, archived: false
-            };
-            if(editTrackers.orders === null) db.orders.push(data);
-            else { 
-                data.archived = db.orders[editTrackers.orders].archived; 
-                data.delivered = db.orders[editTrackers.orders].delivered; 
-                db.orders[editTrackers.orders] = data; 
-            }
-        } 
-        else if (type === 'receivable') {
-            const name = document.getElementById('rec-name').value.trim();
-            if(!name) return alert("Name/Address required");
-            const data = {
-                name, mobile: document.getElementById('rec-mobile').value,
-                date: document.getElementById('rec-date').value,
-                amount: document.getElementById('rec-amount').value,
-                paid: false, archived: false
-            };
-            if(editTrackers.receivable === null) db.receivable.push(data);
-            else { 
-                data.archived = db.receivable[editTrackers.receivable].archived; 
-                data.paid = db.receivable[editTrackers.receivable].paid; 
-                db.receivable[editTrackers.receivable] = data; 
-            }
-        } 
-        else if (type === 'payable') {
-            const desc = document.getElementById('pay-desc').value.trim();
-            const address = document.getElementById('pay-address').value.trim();
-            if(!desc || !address) return alert("Description and Address required");
-            const data = {
-                desc, address, mobile: document.getElementById('pay-mobile').value,
-                date: document.getElementById('pay-date').value,
-                bill: document.getElementById('pay-bill').value,
-                advance: document.getElementById('pay-advance').value,
-                paid: false, archived: false
-            };
-            if(editTrackers.payable === null) db.payable.push(data);
-            else {
-                data.archived = db.payable[editTrackers.payable].archived; 
-                data.paid = db.payable[editTrackers.payable].paid; 
-                db.payable[editTrackers.payable] = data;
-            }
+            const desc = document.getElementById('order-desc').value.trim(); if(!desc) return;
+            const data = { desc, mobile: document.getElementById('order-mobile').value, date: document.getElementById('order-date').value, bill: document.getElementById('order-bill').value, advance: document.getElementById('order-advance').value, delivered: false, archived: false };
+            if(editTrackers.orders === null) db.orders.push(data); else { data.archived = db.orders[editTrackers.orders].archived; data.delivered = db.orders[editTrackers.orders].delivered; db.orders[editTrackers.orders] = data; }
+        } else if (type === 'receivable') {
+            const name = document.getElementById('rec-name').value.trim(); if(!name) return;
+            const data = { name, mobile: document.getElementById('rec-mobile').value, date: document.getElementById('rec-date').value, amount: document.getElementById('rec-amount').value, paid: false, archived: false };
+            if(editTrackers.receivable === null) db.receivable.push(data); else { data.archived = db.receivable[editTrackers.receivable].archived; data.paid = db.receivable[editTrackers.receivable].paid; db.receivable[editTrackers.receivable] = data; }
+        } else if (type === 'payable') {
+            const desc = document.getElementById('pay-desc').value.trim(); const address = document.getElementById('pay-address').value.trim(); if(!desc || !address) return;
+            const data = { desc, address, mobile: document.getElementById('pay-mobile').value, date: document.getElementById('pay-date').value, bill: document.getElementById('pay-bill').value, advance: document.getElementById('pay-advance').value, paid: false, archived: false };
+            if(editTrackers.payable === null) db.payable.push(data); else { data.archived = db.payable[editTrackers.payable].archived; data.paid = db.payable[editTrackers.payable].paid; db.payable[editTrackers.payable] = data; }
         }
-
-        saveToFile(type);
-        clearForm(type);
-        if(type === 'orders') renderOrders();
-        if(type === 'receivable') renderReceivable();
-        if(type === 'payable') renderPayable();
+        saveToFile(type); clearForm(type); if(type === 'orders') renderOrders(); if(type === 'receivable') renderReceivable(); if(type === 'payable') renderPayable();
     }
 
     function startEdit(type, index) {
-        editTrackers[type] = index;
-        const item = db[type][index];
-        const submitBtn = document.getElementById(`submit-${type}`);
-        const cancelBtn = document.getElementById(`cancel-${type}`);
-        
-        submitBtn.innerText = "Update Record";
-        submitBtn.style.background = "#007bff";
-        cancelBtn.style.display = "block";
-
-        if (type === 'orders') {
-            document.getElementById('order-desc').value = item.desc;
-            document.getElementById('order-mobile').value = item.mobile;
-            document.getElementById('order-date').value = item.date;
-            document.getElementById('order-bill').value = item.bill;
-            document.getElementById('order-advance').value = item.advance;
-        } else if (type === 'receivable') {
-            document.getElementById('rec-name').value = item.name;
-            document.getElementById('rec-mobile').value = item.mobile;
-            document.getElementById('rec-date').value = item.date;
-            document.getElementById('rec-amount').value = item.amount;
-        } else if (type === 'payable') {
-            document.getElementById('pay-desc').value = item.desc;
-            document.getElementById('pay-address').value = item.address;
-            document.getElementById('pay-mobile').value = item.mobile;
-            document.getElementById('pay-date').value = item.date;
-            document.getElementById('pay-bill').value = item.bill;
-            document.getElementById('pay-advance').value = item.advance;
-        }
+        editTrackers[type] = index; const item = db[type][index];
+        const submitBtn = document.getElementById(`submit-${type}`); const cancelBtn = document.getElementById(`cancel-${type}`);
+        submitBtn.innerText = "Update Record"; submitBtn.style.background = "#007bff"; cancelBtn.style.display = "block";
+        if (type === 'orders') { document.getElementById('order-desc').value = item.desc; document.getElementById('order-mobile').value = item.mobile; document.getElementById('order-date').value = item.date; document.getElementById('order-bill').value = item.bill; document.getElementById('order-advance').value = item.advance; }
+        else if (type === 'receivable') { document.getElementById('rec-name').value = item.name; document.getElementById('rec-mobile').value = item.mobile; document.getElementById('rec-date').value = item.date; document.getElementById('rec-amount').value = item.amount; }
+        else if (type === 'payable') { document.getElementById('pay-desc').value = item.desc; document.getElementById('pay-address').value = item.address; document.getElementById('pay-mobile').value = item.mobile; document.getElementById('pay-date').value = item.date; document.getElementById('pay-bill').value = item.bill; document.getElementById('pay-advance').value = item.advance; }
     }
 
-    function archiveItem(type, index, status) {
-        db[type][index].archived = status;
-        if(!status) {
-            if(type === 'orders') db.orders[index].delivered = false;
-            if(type === 'receivable' || type === 'payable') db[type][index].paid = false;
-        }
-        saveToFile(type);
-        if(type === 'orders') renderOrders();
-        if(type === 'receivable') renderReceivable();
-        if(type === 'payable') renderPayable();
-    }
-
-    function deleteItem(type, index) {
-        if(confirm("Are you sure you want to delete this record permanently?")) {
-            db[type].splice(index, 1);
-            saveToFile(type);
-            if(type === 'orders') renderOrders();
-            if(type === 'receivable') renderReceivable();
-            if(type === 'payable') renderPayable();
-        }
-    }
+    function archiveItem(type, index, status) { db[type][index].archived = status; if(!status) { if(type === 'orders') db.orders[index].delivered = false; if(type === 'receivable' || type === 'payable') db[type][index].paid = false; } saveToFile(type); if(type === 'orders') renderOrders(); if(type === 'receivable') renderReceivable(); if(type === 'payable') renderPayable(); }
+    function deleteItem(type, index) { if(confirm("Delete permanently?")) { db[type].splice(index, 1); saveToFile(type); if(type === 'orders') renderOrders(); if(type === 'receivable') renderReceivable(); if(type === 'payable') renderPayable(); } }
 
     function toggleArchive(type) {
         archiveTrackers[type] = !archiveTrackers[type];
-        const btn = document.getElementById(`toggle-archive-${type}`);
-        const banner = document.getElementById(`archive-banner-${type}`);
-        const form = document.getElementById(`form-${type}`);
-
-        if(archiveTrackers[type]) {
-            btn.innerText = "View Active"; btn.style.background = "#007bff"; banner.style.display = "block"; if(form) form.style.display = "none";
-        } else {
-            btn.innerText = "View Archive"; btn.style.background = "#6f42c1"; banner.style.display = "none"; if(form) form.style.display = "grid";
-        }
-        if(type === 'orders') renderOrders();
-        if(type === 'receivable') renderReceivable();
-        if(type === 'payable') renderPayable();
+        const btn = document.getElementById(`toggle-archive-${type}`); const banner = document.getElementById(`archive-banner-${type}`); const form = document.getElementById(`form-${type}`);
+        if(archiveTrackers[type]) { btn.innerText = "View Active"; btn.style.background = "#007bff"; banner.style.display = "block"; if(form) form.style.display = "none"; }
+        else { btn.innerText = "View Archive"; btn.style.background = "#6f42c1"; banner.style.display = "none"; if(form) form.style.display = "grid"; }
+        if(type === 'orders') renderOrders(); if(type === 'receivable') renderReceivable(); if(type === 'payable') renderPayable();
     }
 
     function clearForm(type) {
         editTrackers[type] = null;
-        const submitBtn = document.getElementById(`submit-${type}`);
-        const cancelBtn = document.getElementById(`cancel-${type}`);
-        
-        submitBtn.innerText = type === 'orders' ? "Add Order" : "Add Record";
-        submitBtn.style.background = "#28a745";
-        cancelBtn.style.display = "none";
-
+        const submitBtn = document.getElementById(`submit-${type}`); const cancelBtn = document.getElementById(`cancel-${type}`);
+        submitBtn.innerText = type === 'orders' ? "Add Order" : "Add Record"; submitBtn.style.background = "#28a745"; cancelBtn.style.display = "none";
         if(type === 'orders') document.querySelectorAll('#form-orders input').forEach(i => i.value = '');
         if(type === 'receivable') document.querySelectorAll('#form-receivable input').forEach(i => i.value = '');
         if(type === 'payable') document.querySelectorAll('#form-payable input').forEach(i => i.value = '');
     }
-
-    renderOrders();
 </script>
 </body>
 </html>
